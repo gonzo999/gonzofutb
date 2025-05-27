@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Control de Pruebas de Fútbol - Profesional</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 30px auto;
+    max-width: 900px;
+    background: #f7f9fc;
+    color: #333;
+  }
+  h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+  }
+  label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 6px;
+  }
+  input[type="text"], select {
+    width: 100%;
+    max-width: 320px;
+    padding: 10px 12px;
+    font-size: 1rem;
+    border: 1.8px solid #3498db;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    transition: border-color 0.3s ease;
+  }
+  input[type="text"]:focus, select:focus {
+    border-color: #2980b9;
+    outline: none;
+  }
+  button {
+    cursor: pointer;
+    background-color: #2980b9;
+    border: none;
+    color: white;
+    padding: 12px 20px;
+    margin: 5px 10px 15px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: background-color 0.3s ease;
+  }
+  button:hover:not(:disabled) {
+    background-color: #1b6699;
+  }
+  button:disabled {
+    background-color: #bdc3c7;
+    cursor: default;
+  }
+  .timer {
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #34495e;
+    margin-left: 15px;
+    vertical-align: middle;
+  }
+  #toquesCount {
+    display: inline-block;
+    font-weight: 700;
+    font-size: 1.3rem;
+    margin-left: 12px;
+    color: #27ae60;
+    user-select: none;
+  }
+  .container-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 25px;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+  th, td {
+    padding: 14px 18px;
+    border-bottom: 1px solid #ecf0f1;
+    text-align: center;
+  }
+  th {
+    background-color: #2980b9;
+    color: white;
+    font-weight: 700;
+  }
+  tr:hover {
+    background-color: #f1faff;
+  }
+  /* Estilos autocompletado */
+  .autocomplete-items {
+    position: absolute;
+    border: 1px solid #d4d4d4;
+    border-top: none;
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 99;
+    background-color: white;
+    width: 320px;
+    border-radius: 0 0 6px 6px;
+  }
+  .autocomplete-items div {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #ddd;
+  }
+  .autocomplete-items div:hover, .autocomplete-active {
+    background-color: #3498db;
+    color: white;
+  }
+</style>
+</head>
+<body>
+
+<h2>Control de Pruebas de Fútbol - Profesional</h2>
+
+<div style="position:relative; max-width: 320px; margin-bottom: 30px;">
+  <label for="nombreJugador">Nombre del Jugador:</label>
+  <input type="text" id="nombreJugador" placeholder="Ingresa nombre" autocomplete="off" />
+</div>
+
+<div style="max-width: 320px; margin-bottom: 30px;">
+  <label for="pruebaSelect">Selecciona la prueba:</label>
+  <select id="pruebaSelect">
+    <option value="velocidad">Velocidad 100 metros</option>
+    <option value="conduccion">Conducción 100 metros</option>
+    <option value="dominadas">Dominadas de balón en 1 minuto</option>
+  </select>
+</div>
+
+<div id="velocidadContainer" class="container-inline" style="display:none;">
+  <button id="startVelocidad">Iniciar Tiempo</button>
+  <button id="stopVelocidad" disabled>Detener Tiempo</button>
+  <span id="timerVelocidad" class="timer">00:00.000</span>
+</div>
+
+<div id="conduccionContainer" class="container-inline" style="display:none;">
+  <button id="startConduccion">Iniciar Tiempo</button>
+  <button id="stopConduccion" disabled>Detener Tiempo</button>
+  <span id="timerConduccion" class="timer">00:00.000</span>
+</div>
+
+<div id="dominadasContainer" style="margin-bottom: 20px; display:none;">
+  <div class="container-inline">
+    <button id="startDominadas">Iniciar Tiempo</button>
+    <button id="stopDominadas" disabled>Detener Tiempo</button>
+    <span id="timerDominadas" class="timer">01:00</span>
+  </div>
+  <div class="container-inline" style="margin-top:10px;">
+    <button id="btnContarToques" disabled>Registrar Toque</button>
+    <span>Toques: <span id="toquesCount">0</span></span>
+  </div>
+</div>
+
+<button id="guardarResultado" style="margin-top: 10px;">Guardar Resultado</button>
+<button id="exportarPDF" style="margin-top: 10px;">Exportar a PDF</button>
+
+<table>
+  <thead>
+    <tr>
+      <th>Jugador</th>
+      <th>Prueba</th>
+      <th>Resultado (segundos / toques)</th>
+      <th>Clasificación</th>
+    </tr>
+  </thead>
+  <tbody id="resultsTableBody"></tbody>
+</table>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  // Variables temporizadores
+  let intervalVelocidad, intervalConduccion, countdownDominadas;
+  let startTimeVelocidad, startTimeConduccion;
+  let runningVelocidad = false, runningConduccion = false, runningDominadas = false;
+
+  // Contador de toques
+  let toquesCount = 0;
+
+  // Elementos DOM
+  const nombreJugador = document.getElementById('nombreJugador');
+  const pruebaSelect = document.getElementById('pruebaSelect');
+
+  const velocidadContainer = document.getElementById('velocidadContainer');
+  const conduccionContainer = document.getElementById('conduccionContainer');
+  const dominadasContainer = document.getElementById('dominadasContainer');
+
+  const startVelocidadBtn = document.getElementById('startVelocidad');
+  const stopVelocidadBtn = document.getElementById('stopVelocidad');
+  const timerVelocidad = document.getElementById('timerVelocidad');
+
+  const startConduccionBtn = document.getElementById('startConduccion');
+  const stopConduccionBtn = document.getElementById('stopConduccion');
+  const timerConduccion = document.getElementById('timerConduccion');
+
+  const startDominadasBtn = document.getElementById('startDominadas');
+  const stopDominadasBtn = document.getElementById('stopDominadas');
+  const timerDominadas = document.getElementById('timerDominadas');
+
+  const btnContarToques = document.getElementById('btnContarToques');
+  const toquesCountSpan = document.getElementById('toquesCount');
+
+  const guardarResultadoBtn = document.getElementById('guardarResultado');
+  const exportarPDFBtn = document.getElementById('exportarPDF');
+
+  const resultsTableBody = document.getElementById('resultsTableBody');
+
+  let resultados = [];
+  let nombresJugadores = [];
+
+  // Mostrar temporizador correcto según prueba
+  function mostrarContador() {
+    velocidadContainer.style.display = 'none';
+    conduccionContainer.style.display = 'none';
+    dominadasContainer.style.display = 'none';
+
+    if(pruebaSelect.value === 'velocidad') {
+      velocidadContainer.style.display = 'flex';
+      resetVelocidad();
+    } else if(pruebaSelect.value === 'conduccion') {
+      conduccionContainer.style.display = 'flex';
+      resetConduccion();
+    } else {
+      dominadasContainer.style.display = 'block';
+      resetDominadas();
+    }
+  }
+  pruebaSelect.addEventListener('change', mostrarContador);
+  mostrarContador();
+
+  // Formatear tiempo mm:ss.mmm
+  function formatTime(duration) {
+    const minutes = Math.floor(duration / 60000);
+    const seconds = Math.floor((duration % 60000) / 1000);
+    const milliseconds = duration % 1000;
+    return (
+      (minutes < 10 ? "0" : "") + minutes + ":" +
+      (seconds < 10 ? "0" : "") + seconds + "." +
+      milliseconds.toString().padStart(3, "0")
+    );
+  }
+
+  // Velocidad
+  startVelocidadBtn.onclick = () => {
+    if(runningVelocidad) return;
+    runningVelocidad = true;
+    startTimeVelocidad = Date.now();
+    startVelocidadBtn.disabled = true;
+    stopVelocidadBtn.disabled = false;
+    intervalVelocidad = setInterval(() => {
+      const elapsed = Date.now() - startTimeVelocidad;
+      timerVelocidad.textContent = formatTime(elapsed);
+    }, 50);
+  };
+
+  stopVelocidadBtn.onclick = () => {
+    if(!runningVelocidad) return;
+    runningVelocidad = false;
+    clearInterval(intervalVelocidad);
+    startVelocidadBtn.disabled = false;
+    stopVelocidadBtn.disabled = true;
+  };
+
+  function resetVelocidad() {
+    clearInterval(intervalVelocidad);
+    runningVelocidad = false;
+    startVelocidadBtn.disabled = false;
+    stopVelocidadBtn.disabled = true;
+    timerVelocidad.textContent = "00:00.000";
+  }
+
+  // Conducción
+  startConduccionBtn.onclick = () => {
+    if(runningConduccion) return;
+    runningConduccion = true;
+    startTimeConduccion = Date.now();
+    startConduccionBtn.disabled = true;
+    stopConduccionBtn.disabled = false;
+    intervalConduccion = setInterval(() => {
+      const elapsed = Date.now() - startTimeConduccion;
+      timerConduccion.textContent = formatTime(elapsed);
+    }, 50);
+  };
+
+  stopConduccionBtn.onclick = () => {
+    if(!runningConduccion) return;
+    runningConduccion = false;
+    clearInterval(intervalConduccion);
+    startConduccionBtn.disabled = false;
+    stopConduccionBtn.disabled = true;
+  };
+
+  function resetConduccion() {
+    clearInterval(intervalConduccion);
+    runningConduccion = false;
+    startConduccionBtn.disabled = false;
+    stopConduccionBtn.disabled = true;
+    timerConduccion.textContent = "00:00.000";
+  }
+
+  // Dominadas (1 minuto cuenta regresiva)
+  startDominadasBtn.onclick = () => {
+    if(runningDominadas) return;
+    runningDominadas = true;
+    let tiempoRestante = 60000;
+    timerDominadas.textContent = "01:00";
+    toquesCount = 0;
+    toquesCountSpan.textContent = toquesCount;
+
+    startDominadasBtn.disabled = true;
+    stopDominadasBtn.disabled = false;
+    btnContarToques.disabled = false;
+
+    countdownDominadas = setInterval(() => {
+      tiempoRestante -= 1000;
+      const min = Math.floor(tiempoRestante / 60000);
+      const seg = Math.floor((tiempoRestante % 60000) / 1000);
+      timerDominadas.textContent =
+        (min < 10 ? "0" : "") + min + ":" + (seg < 10 ? "0" : "") + seg;
+
+      if (tiempoRestante <= 0) {
+        clearInterval(countdownDominadas);
+        runningDominadas = false;
+        startDominadasBtn.disabled = false;
+        stopDominadasBtn.disabled = true;
+        btnContarToques.disabled = true;
+        alert("Tiempo terminado, detenga la prueba y guarde.");
+      }
+    }, 1000);
+  };
+
+  stopDominadasBtn.onclick = () => {
+    if(!runningDominadas) return;
+    runningDominadas = false;
+    clearInterval(countdownDominadas);
+    startDominadasBtn.disabled = false;
+    stopDominadasBtn.disabled = true;
+    btnContarToques.disabled = true;
+  };
+
+  btnContarToques.onclick = () => {
+    toquesCount++;
+    toquesCountSpan.textContent = toquesCount;
+  };
+
+  function resetDominadas() {
+    clearInterval(countdownDominadas);
+    runningDominadas = false;
+    startDominadasBtn.disabled = false;
+    stopDominadasBtn.disabled = true;
+    btnContarToques.disabled = true;
+    timerDominadas.textContent = "01:00";
+    toquesCount = 0;
+    toquesCountSpan.textContent = toquesCount;
+  }
+
+  // Autocompletado
+  function autocomplete(inp, arr) {
+    let currentFocus;
+    inp.addEventListener("input", function() {
+      let val = this.value;
+      closeAllLists();
+      if (!val) { return false;}
+      currentFocus = -1;
+      let listDiv = document.createElement("DIV");
+      listDiv.setAttribute("id", this.id + "autocomplete-list");
+      listDiv.setAttribute("class", "autocomplete-items");
+      this.parentNode.appendChild(listDiv);
+      for (let i = 0; i < arr.length; i++) {
+        if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+          let itemDiv = document.createElement("DIV");
+          itemDiv.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+          itemDiv.innerHTML += arr[i].substr(val.length);
+          itemDiv.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+          itemDiv.addEventListener("click", function() {
+            inp.value = this.getElementsByTagName("input")[0].value;
+            closeAllLists();
+          });
+          listDiv.appendChild(itemDiv);
+        }
+      }
+    });
+    inp.addEventListener("keydown", function(e) {
+      let x = document.getElementById(this.id + "autocomplete-list");
+      if (x) x = x.getElementsByTagName("div");
+      if (e.keyCode == 40) { currentFocus++; addActive(x); }
+      else if (e.keyCode == 38) { currentFocus--; addActive(x); }
+      else if (e.keyCode == 13) { e.preventDefault(); if (currentFocus > -1) { if (x) x[currentFocus].click(); } }
+    });
+    function addActive(x) {
+      if (!x) return false;
+      removeActive(x);
+      if (currentFocus >= x.length) currentFocus = 0;
+      if (currentFocus < 0) currentFocus = (x.length - 1);
+      x[currentFocus].classList.add("autocomplete-active");
+    }
+    function removeActive(x) {
+      for (let i = 0; i < x.length; i++) { x[i].classList.remove("autocomplete-active"); }
+    }
+    function closeAllLists(elmnt) {
+      let items = document.getElementsByClassName("autocomplete-items");
+      for (let i = 0; i < items.length; i++) {
+        if (elmnt != items[i] && elmnt != inp) {
+          items[i].parentNode.removeChild(items[i]);
+        }
+      }
+    }
+    document.addEventListener("click", function (e) { closeAllLists(e.target); });
+  }
+
+  // Guardar resultado
+  guardarResultadoBtn.onclick = () => {
+    const jugador = nombreJugador.value.trim();
+    if (!jugador) {
+      alert("Ingrese el nombre del jugador.");
+      return;
+    }
+    if (!nombresJugadores.includes(jugador)) {
+      nombresJugadores.push(jugador);
+      nombresJugadores.sort();
+    }
+
+    const prueba = pruebaSelect.value;
+    let resultado;
+
+    if (prueba === "velocidad") {
+      if (runningVelocidad) {
+        alert("Detén el cronómetro antes de guardar.");
+        return;
+      }
+      resultado = timerVelocidad.textContent;
+    } else if (prueba === "conduccion") {
+      if (runningConduccion) {
+        alert("Detén el cronómetro antes de guardar.");
+        return;
+      }
+      resultado = timerConduccion.textContent;
+    } else {
+      if (runningDominadas) {
+        alert("Detén el cronómetro antes de guardar.");
+        return;
+      }
+      resultado = toquesCount;
+      if (resultado === "" || resultado < 0) {
+        alert("Ingresa un número válido de toques.");
+        return;
+      }
+    }
+
+    const valorNum = parseResultado(resultado, prueba);
+    resultados.push({ jugador, prueba, resultado, valorNum });
+    mostrarResultados();
+    autocomplete(nombreJugador, nombresJugadores);
+  };
+
+  function parseResultado(valor, prueba) {
+    if (prueba === "dominadas") {
+      return Number(valor);
+    } else {
+      const parts = valor.split(/[:.]/);
+      if (parts.length < 3) return 999999;
+      const minutos = parseInt(parts[0], 10);
+      const segundos = parseInt(parts[1], 10);
+      const milisegundos = parseInt(parts[2], 10);
+      return minutos * 60 + segundos + milisegundos / 1000;
+    }
+  }
+
+  function calcularMediaYDesviacion(valores) {
+    const n = valores.length;
+    if (n === 0) return { media: 0, desviacion: 0 };
+    const media = valores.reduce((a, b) => a + b, 0) / n;
+    const varianza = valores.reduce((a, b) => a + Math.pow(b - media, 2), 0) / n;
+    const desviacion = Math.sqrt(varianza);
+    return { media, desviacion };
+  }
+
+  function clasificarResultado(prueba, valor, media, desviacion) {
+    if (prueba === "dominadas") {
+      if (valor >= media + desviacion / 2) return "Maravilloso";
+      else if (valor >= media - desviacion / 2) return "Excelente";
+      else return "Bueno";
+    } else {
+      if (valor <= media - desviacion / 2) return "Maravilloso";
+      else if (valor <= media + desviacion / 2) return "Excelente";
+      else return "Bueno";
+    }
+  }
+
+  function mostrarResultados() {
+    resultsTableBody.innerHTML = "";
+
+    const grupos = {};
+    resultados.forEach((r) => {
+      if (!grupos[r.prueba]) grupos[r.prueba] = [];
+      grupos[r.prueba].push(r);
+    });
+
+    const stats = {};
+    for (const prueba in grupos) {
+      const valores = grupos[prueba].map((r) => r.valorNum);
+      stats[prueba] = calcularMediaYDesviacion(valores);
+      grupos[prueba].sort((a, b) => a.valorNum - b.valorNum);
+    }
+
+    for (const prueba in grupos) {
+      grupos[prueba].forEach((r) => {
+        const clasif = clasificarResultado(
+          prueba,
+          r.valorNum,
+          stats[prueba].media,
+          stats[prueba].desviacion
+        );
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${r.jugador}</td>
+          <td>${prueba.charAt(0).toUpperCase() + prueba.slice(1)}</td>
+          <td>${r.resultado}</td>
+          <td>${clasif}</td>
+        `;
+        resultsTableBody.appendChild(row);
+      });
+    }
+  }
+
+  exportarPDFBtn.onclick = () => {
+    if (resultados.length === 0) {
+      alert("No hay resultados para exportar.");
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text("Resultados de Pruebas de Fútbol", 14, 20);
+    doc.setFontSize(12);
+
+    let y = 30;
+    resultados.forEach((r, i) => {
+      const stats = resultados.filter((x) => x.prueba === r.prueba);
+      const media =
+        stats.reduce((acc, val) => acc + val.valorNum, 0) / stats.length;
+      const desviacion = Math.sqrt(
+        stats.reduce(
+          (acc, val) =>
+            acc + Math.pow(val.valorNum - media, 2),
+          0
+        ) / stats.length
+      );
+      const clasif = clasificarResultado(r.prueba, r.valorNum, media, desviacion);
+
+      doc.text(
+        `${i + 1}. ${r.jugador} - ${
+          r.prueba.charAt(0).toUpperCase() + r.prueba.slice(1)
+        } - ${r.resultado} - ${clasif}`,
+        14,
+        y
+      );
+      y += 10;
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+    });
+
+    doc.save("resultados_pruebas_futbol.pdf");
+  };
+
+  // Inicializar autocompletado
+  autocomplete(nombreJugador, nombresJugadores);
+</script>
+
+</body>
+</html>
